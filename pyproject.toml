@@ -1,0 +1,83 @@
+[project]
+name = "retrieval-pipeline"
+version = "0.1.0"
+description = "A modular document retrieval and reranking pipeline"
+readme = "README.md"
+requires-python = ">=3.10"
+dependencies = [
+    "accelerate",
+    "beautifulsoup4",
+    "chromadb",
+    "docling",
+    "jq",
+    "langchain",
+    "langchain-chroma",
+    "langchain-community",
+    "langchain-docling",
+    "langchain-huggingface",
+    "langchain-text-splitters",
+    "loguru",
+    "pandas",
+    "pypdf",
+    "python-docx",
+    "python-pptx",
+    "requests",
+    "sentence-transformers",
+    "tiktoken",
+    "torch",
+    "torchaudio",
+    "torchvision",
+    "transformers",
+    "python-dotenv",
+    "unstructured",
+]
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.ruff]
+line-length = 100
+target-version = "py310"
+
+[tool.ruff.lint]
+select = [
+    "E",    # pycodestyle errors             (flake8)
+    "W",    # pycodestyle warnings           (flake8)
+    "F",    # pyflakes                        (flake8)
+    "I",    # isort                           (isort)
+    "B",    # flake8-bugbear                  (bugbear)
+    "UP",   # pyupgrade                       (pyupgrade)
+    "D",    # pydocstyle                      (flake8-docstrings)
+    "T20",  # flake8-print                    (flake8-print)
+    "A",    # flake8-builtins                 (flake8-builtins)
+    "COM",  # flake8-commas                   (other comma rules; COM812 ignored below)
+    "EM",   # flake8-errmsg                   (exception messages)
+    "ERA",  # eradicate                       (flake8-eradicate / commented-out code)
+    "G",    # flake8-logging-format           (log formatting)
+    "ANN",  # flake8-annotations              (type annotation enforcement)
+    "RUF",  # Ruff-specific rules             (additional safety & correctness)
+    "SLF",  # flake8-self                     (private member access)
+    "BLE",  # flake8-blind-except             (bare/blind exception catches)
+    "TRY",  # tryceratops                     (exception handling best practices)
+    "C90",  # mccabe complexity               (complexity checks)
+    "PL",   # pylint                          (pylint-equivalent checks)
+    "FBT",  # flake8-boolean-trap             (boolean positional args)
+    "N",    # pep8-naming                     (PEP 8 naming conventions)
+]
+ignore = [
+    "D203",    # incompatible with D211 (no-blank-line-before-class)
+    "D213",    # incompatible with D212 (multi-line-summary-first-line)
+    "PLR0913", # too-many-arguments — resolved by dataclass-style config objects
+    "FBT001",  # boolean positional arg — unavoidable in some public APIs
+    "FBT002",  # boolean default value  — same as above
+    "TRY003",  # long exception messages — acceptable for domain errors
+    "EM102",   # f-string in exception  — acceptable for clarity
+    "COM812",  # trailing comma missing  — conflicts with ruff formatter (formatter owns this)
+]
+
+[tool.ruff.lint.pydocstyle]
+convention = "numpy"
+
+[tool.ruff.lint.per-file-ignores]
+"src/retrieval_pipeline/display.py" = ["T20"]  # print() is intentional terminal UI

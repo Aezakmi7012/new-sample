@@ -68,6 +68,8 @@ select = [
 ignore = [
     "D203",    # incompatible with D211 (no-blank-line-before-class)
     "D213",    # incompatible with D212 (multi-line-summary-first-line)
+    "ANN101",  # missing type for `self`  — removed in ruff >=0.2, kept for older versions
+    "ANN102",  # missing type for `cls`   — same as above
     "PLR0913", # too-many-arguments — resolved by dataclass-style config objects
     "FBT001",  # boolean positional arg — unavoidable in some public APIs
     "FBT002",  # boolean default value  — same as above

@@ -128,3 +128,6 @@ def run_pipeline(
 if __name__ == "__main__":
     setup_logging()
     logger.info("Pipeline ready.")
+    run_pipeline(
+        source="/workspaces/new-sample/dataset/data.pdf", queries=["What is the invicible man name"]
+    )

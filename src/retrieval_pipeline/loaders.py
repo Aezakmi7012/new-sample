@@ -219,7 +219,7 @@ class DocumentLoader:
 
     def _load_pdf(self, path: Path) -> list[Document]:
         """Load a PDF file via the Docling backend."""
-        from langchain_docling import DoclingLoader  # noqa: PLC0415 — optional heavy dep
+        from langchain_docling import DoclingLoader  # — optional heavy dep
 
         logger.info(f"Loading PDF via Docling: {path}")
         return DoclingLoader(file_path=str(path)).load()

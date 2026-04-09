@@ -13,7 +13,7 @@ env/
 # Vector Store & Data (Important!)
 # ==============================
 # Prevent committing your vector database and raw documents
-*/chroma_store/
+chroma_store/
 data/
 *.pdf
 *.csv

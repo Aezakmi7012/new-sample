@@ -15,8 +15,6 @@ env/
 # Prevent committing your vector database and raw documents
 chroma_store/
 data/
-*.pdf
-*.csv
 *.json
 *.docx
 *.pptx

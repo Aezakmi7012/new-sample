@@ -23,6 +23,6 @@ pre-commit run
 # Run the application
 python -m retrieval_pipeline.main
 
-# For Docling (codespaces didnt have it so...) PS: Ignore if you dont face this erroe
+## For Docling (codespaces didnt have it so...) PS: Ignore if you dont face this error
 sudo apt-get update
 sudo apt-get install -y libgl1

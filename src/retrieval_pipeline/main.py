@@ -126,8 +126,41 @@ def run_pipeline(
 
 
 if __name__ == "__main__":
+    import sys
+
     setup_logging()
     logger.info("Pipeline ready.")
-    run_pipeline(
-        source="/workspaces/new-sample/dataset/data.pdf", queries=["What is the invicible man name"]
-    )
+
+    mode = sys.argv[1] if len(sys.argv) > 1 else "retriever"
+
+    if mode == "chain":
+        # uv run python -m retrieval_pipeline.main chain
+        from retrieval_pipeline.llm_chain import answer as llm_answer
+
+        _pipeline = run_pipeline(
+            source="dataset/data.pdf",
+            queries=[],
+        )
+        _docs = _pipeline.compression_retriever.invoke("What is the EBITDA margin?")
+        print(llm_answer("What is the EBITDA margin?", _docs))
+
+    elif mode == "graph":
+        # uv run python -m retrieval_pipeline.main graph
+        from retrieval_pipeline.graph import build_graph
+
+        _cfg = PipelineConfig()
+        _pipeline = run_pipeline(
+            source="/workspaces/new-sample/dataset/samplee.pdf",
+            queries=[],
+            config=_cfg,
+        )
+        _app = build_graph(_pipeline, _cfg)
+        _result = _app.invoke({"question": "How does gradient descent work?"})
+        print(_result["answer"])
+
+    else:
+        # uv run python -m retrieval_pipeline.main   (original behaviour)
+        run_pipeline(
+            source="dataset/data.pdf",
+            queries=["What is the invisible man name"],
+        )

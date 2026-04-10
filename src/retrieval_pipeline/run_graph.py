@@ -1,27 +1,21 @@
-"""Script: run the LangGraph routing pipeline.
-
-Classifies each query as ml or general, then either
-retrieves → generates (ml) or answers directly (general).
-
-Usage
------
-    uv run python scripts/run_graph.py
-
-Set PIPELINE_SOURCE in .env or the shell to point at your document.
-"""
+"""Script: run the LangGraph routing pipeline."""
 
 from __future__ import annotations
 
 import os
 
-from retrieval_pipeline import PipelineConfig, build_graph, run_pipeline
+from loguru import logger
+
+from retrieval_pipeline.config import PipelineConfig
+from retrieval_pipeline.graph import build_graph
 from retrieval_pipeline.logging_config import setup_logging
+from retrieval_pipeline.pipeline import run_pipeline
 
 _SOURCE: str = os.getenv("PIPELINE_SOURCE", "dataset/data.pdf")
 
 _QUERIES: list[dict[str, str]] = [
-    {"question": "How does gradient descent work?"},        # ml path
-    {"question": "What is the capital of France?"},         # general path
+    {"question": "How does gradient descent work?"},
+    {"question": "What is the capital of France?"},
 ]
 
 
@@ -35,9 +29,10 @@ def main() -> None:
 
     for query in _QUERIES:
         result = app.invoke(query)
-        print(f"\nQuestion  : {query['question']}")
-        print(f"Type      : {result['query_type']}")
-        print(f"Answer    : {result['answer']}")
+
+        logger.info("\nQuestion  : {}", query["question"])
+        logger.info("Type      : {}", result["query_type"])
+        logger.info("Answer    : {}", result["answer"])
 
 
 if __name__ == "__main__":

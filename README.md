@@ -23,3 +23,7 @@ cd src
 
 # Run the application
 python -m retrieval_pipeline.main
+
+# For Docling
+sudo apt-get update
+sudo apt-get install -y libgl1

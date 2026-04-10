@@ -9,6 +9,8 @@ dependencies = [
     "beautifulsoup4",
     "chromadb",
     "docling",
+    "langchain-groq",
+    "langgraph",
     "jq",
     "langchain",
     "langchain-chroma",
@@ -30,6 +32,7 @@ dependencies = [
     "transformers",
     "python-dotenv",
     "unstructured",
+    "pydantic-settings",
 ]
 
 [build-system]
@@ -84,3 +87,4 @@ convention = "numpy"
 
 [tool.ruff.lint.per-file-ignores]
 "src/retrieval_pipeline/display.py" = ["T20"]  # allow print for CLI output
+"src/retrieval_pipeline/graph.py" = ["T20"]

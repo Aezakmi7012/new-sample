@@ -1,14 +1,8 @@
-"""Main orchestrator for the retrieval and reranking pipeline.
-
-Entry point that wires together all pipeline components:
-:class:`~retrieval_pipeline.loaders.DocumentLoader`,
-:class:`~retrieval_pipeline.splitters.DocumentSplitter`,
-:class:`~retrieval_pipeline.vectorstore.VectorStoreBuilder`,
-:class:`~retrieval_pipeline.pipeline.RetrievalPipeline`, and
-:class:`~retrieval_pipeline.display.ResultsDisplay`.
-"""
+"""Main orchestrator for the retrieval and reranking pipeline."""
 
 from __future__ import annotations
+
+import sys
 
 from langchain_community.vectorstores.utils import filter_complex_metadata
 from loguru import logger
@@ -32,39 +26,9 @@ def run_pipeline(
     sql_query: str = "SELECT * FROM documents",
     show: str = "both",
 ) -> RetrievalPipeline:
-    """Execute the end-to-end document loading, chunking, and querying process.
-
-    Parameters
-    ----------
-    source : object
-        A file path, directory path, HTTP(S) URL, ``pd.DataFrame``, or list.
-    queries : list[str]
-        One or more search queries to run against the pipeline.
-    config : PipelineConfig | None
-        Pipeline configuration. Defaults to :class:`~retrieval_pipeline.config.PipelineConfig`
-        with values read from environment variables.
-    is_directory : bool
-        When ``True``, *source* is treated as a directory and scanned
-        recursively.
-    extensions : list[str] | None
-        File extensions to include when *is_directory* is ``True``.
-        ``None`` loads all supported extensions.
-    json_jq_schema : str
-        ``jq`` schema applied to ``.json`` source files.
-    sql_query : str
-        SQL statement executed against ``.db`` / ``.sqlite`` source files.
-    show : str
-        Controls which results are displayed:
-        ``"retriever"``, ``"reranker"``, or ``"both"``.
-
-    Returns
-    -------
-    RetrievalPipeline
-        The assembled pipeline (retriever + reranker + cross-encoder).
-    """
+    """Execute the end-to-end document loading, chunking, and querying process."""
     cfg = config or PipelineConfig()
 
-    # Step 1 - Load
     logger.info("Step 1: Loading documents")
     loader = DocumentLoader(json_jq_schema=json_jq_schema, sql_query=sql_query)
     docs = (
@@ -73,12 +37,13 @@ def run_pipeline(
         else loader.load(source)
     )
 
-    # Step 2 - Split
     logger.info("Step 2: Splitting")
-    splitter = DocumentSplitter(chunk_size=cfg.chunk_size, chunk_overlap=cfg.chunk_overlap)
+    splitter = DocumentSplitter(
+        chunk_size=cfg.chunk_size,
+        chunk_overlap=cfg.chunk_overlap,
+    )
     chunks = splitter.split(docs)
 
-    # Step 3 - Embed & store
     logger.info("Step 3: Embedding & vector store")
     clean_chunks = filter_complex_metadata(chunks)
     vs_builder = VectorStoreBuilder(
@@ -89,7 +54,6 @@ def run_pipeline(
     )
     vectorstore, _ = vs_builder.build(clean_chunks)
 
-    # Step 4 - Build retrieval pipeline
     logger.info("Step 4: Building retrieval pipeline")
     pipeline = RetrievalPipeline(
         vectorstore=vectorstore,
@@ -99,12 +63,16 @@ def run_pipeline(
         device=cfg.device,
     )
 
-    # Step 5 - Query
     logger.info("Step 5: Querying")
     display = ResultsDisplay()
     for q in queries:
         if show == "retriever":
-            display.show_retriever(q, pipeline.base_retriever, pipeline.cross_encoder, cfg.top_k)
+            display.show_retriever(
+                q,
+                pipeline.base_retriever,
+                pipeline.cross_encoder,
+                cfg.top_k,
+            )
         elif show == "reranker":
             display.show_reranker(
                 q,
@@ -126,40 +94,49 @@ def run_pipeline(
 
 
 if __name__ == "__main__":
-    import sys
-
     setup_logging()
     logger.info("Pipeline ready.")
 
     mode = sys.argv[1] if len(sys.argv) > 1 else "retriever"
 
     if mode == "chain":
-        # uv run python -m retrieval_pipeline.main chain
         from retrieval_pipeline.llm_chain import answer as llm_answer
 
-        _pipeline = run_pipeline(
+        pipeline = run_pipeline(
             source="dataset/data.pdf",
             queries=[],
         )
-        _docs = _pipeline.compression_retriever.invoke("What is the EBITDA margin?")
-        print(llm_answer("What is the EBITDA margin?", _docs))
+
+        docs = pipeline.compression_retriever.invoke("What is the EBITDA margin?")
+
+        logger.info(
+            "Answer: {}",
+            llm_answer("What is the EBITDA margin?", docs),
+        )
 
     elif mode == "graph":
-        # uv run python -m retrieval_pipeline.main graph
         from retrieval_pipeline.graph import build_graph
 
-        _cfg = PipelineConfig()
-        _pipeline = run_pipeline(
+        cfg = PipelineConfig()
+
+        pipeline = run_pipeline(
             source="/workspaces/new-sample/dataset/samplee.pdf",
             queries=[],
-            config=_cfg,
+            config=cfg,
         )
-        _app = build_graph(_pipeline, _cfg)
-        _result = _app.invoke({"question": "How does gradient descent work?"})
-        print(_result["answer"])
+
+        app = build_graph(pipeline, cfg)
+
+        queries = ["Types of Machine Learning?", "Hi"]
+
+        for q in queries:
+            result = app.invoke({"question": q})
+
+            logger.info("\nQuestion: {}", q)
+            logger.info("Type    : {}", result["query_type"])
+            logger.info("Answer  : {}", result["answer"])
 
     else:
-        # uv run python -m retrieval_pipeline.main   (original behaviour)
         run_pipeline(
             source="dataset/data.pdf",
             queries=["What is the invisible man name"],

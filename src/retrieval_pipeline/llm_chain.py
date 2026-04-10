@@ -1,6 +1,6 @@
 """LLM chain module using Groq as the provider.
 
-Builds a RAG chain via the pipe (``|``) operator:
+Build a RAG chain via the pipe (``|``) operator:
 
     prompt | llm | output_parser
 
@@ -20,6 +20,7 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING
 
+from langchain_core.documents import Document
 from langchain_core.output_parsers import StrOutputParser
 from langchain_core.prompts import ChatPromptTemplate
 from langchain_core.runnables import Runnable
@@ -28,10 +29,9 @@ from loguru import logger
 
 from retrieval_pipeline.config import PipelineConfig
 
-from langchain_core.documents import Document
-
 if TYPE_CHECKING:
-    from langchain_core.documents import Document
+    pass
+
 
 # ---------------------------------------------------------------------------
 # Prompt template
@@ -48,7 +48,7 @@ _RAG_HUMAN_PROMPT: str = "{question}"
 
 
 def _format_docs(docs: list[Document]) -> str:
-    """Concatenate document page-content into a single context string.
+    """Concatenate document page content into a single context string.
 
     Parameters
     ----------
@@ -58,13 +58,13 @@ def _format_docs(docs: list[Document]) -> str:
     Returns
     -------
     str
-        Newline-separated page contents, each preceded by a separator.
+        Newline-separated page contents.
     """
     return "\n\n---\n\n".join(d.page_content for d in docs)
 
 
 def build_rag_chain(config: PipelineConfig | None = None) -> Runnable:
-    """Assemble and return the RAG chain using the pipe operator.
+    """Build and return the RAG chain using the pipe operator.
 
     Chain shape::
 
@@ -73,20 +73,19 @@ def build_rag_chain(config: PipelineConfig | None = None) -> Runnable:
     Parameters
     ----------
     config : PipelineConfig | None
-        Pipeline configuration. If ``None``, a default instance is used
-        (values sourced from environment variables / ``.env``).
+        Pipeline configuration. If ``None``, a default instance is used.
 
     Returns
     -------
     Runnable
-        A LangChain ``Runnable`` that accepts a dict with keys
-        ``"question"`` (str) and ``"context"`` (list[Document] or str)
-        and returns a plain-text ``str`` answer.
+        A LangChain runnable that accepts:
+        - "question": str
+        - "context": str
 
     Raises
     ------
     ValueError
-        If ``GROQ_API_KEY`` is empty in the resolved config.
+        If GROQ_API_KEY is not set.
     """
     cfg = config or PipelineConfig()
 
@@ -111,12 +110,13 @@ def build_rag_chain(config: PipelineConfig | None = None) -> Runnable:
         temperature=cfg.llm_temperature,
     )
 
-    # Pipe operator wires: prompt → llm → str
     chain: Runnable = prompt | llm | StrOutputParser()
 
     logger.info(
-        f"RAG chain built: prompt | ChatGroq({cfg.groq_model}) | StrOutputParser",
+        "RAG chain built: prompt | ChatGroq(%s) | StrOutputParser",
+        cfg.groq_model,
     )
+
     return chain
 
 
@@ -125,14 +125,14 @@ def answer(
     docs: list[Document],
     config: PipelineConfig | None = None,
 ) -> str:
-    """Convenience wrapper — retrieve and answer in one call.
+    """Retrieve documents and return an answer in one call.
 
     Parameters
     ----------
     question : str
         The user's question.
     docs : list[Document]
-        Pre-retrieved document chunks (e.g. from the reranker).
+        Pre-retrieved document chunks.
     config : PipelineConfig | None
         Optional config override.
 

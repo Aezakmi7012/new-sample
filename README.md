@@ -1,5 +1,8 @@
 # 📦 Retrieval Pipeline Setup
 
+# READ THIS FIRST 
+Read env example and give out necessary config
+
 # Install uv (package manager)
 pip install uv
 

@@ -2,7 +2,9 @@
 
 from __future__ import annotations
 
+import os
 import sys
+from pathlib import Path
 
 from langchain_community.vectorstores.utils import filter_complex_metadata
 from loguru import logger
@@ -14,6 +16,18 @@ from retrieval_pipeline.logging_config import setup_logging
 from retrieval_pipeline.pipeline import RetrievalPipeline
 from retrieval_pipeline.splitters import DocumentSplitter
 from retrieval_pipeline.vectorstore import VectorStoreBuilder
+
+# ---------------------------------------------------------------------------
+# CLI argument indices (avoid magic numbers)
+# ---------------------------------------------------------------------------
+
+_ARG_MODE_INDEX = 1
+_ARG_SOURCE_INDEX = 2
+
+
+# ---------------------------------------------------------------------------
+# Core pipeline
+# ---------------------------------------------------------------------------
 
 
 def run_pipeline(
@@ -65,6 +79,7 @@ def run_pipeline(
 
     logger.info("Step 5: Querying")
     display = ResultsDisplay()
+
     for q in queries:
         if show == "retriever":
             display.show_retriever(
@@ -93,17 +108,49 @@ def run_pipeline(
     return pipeline
 
 
+# ---------------------------------------------------------------------------
+# Path resolution
+# ---------------------------------------------------------------------------
+
+
+def _resolve_source(path_arg: str | None) -> Path:
+    """Resolve dataset path from CLI argument or environment variable."""
+    base = Path(path_arg or os.getenv("PIPELINE_SOURCE", "dataset"))
+
+    # If directory → pick default file
+    if base.is_dir():
+        return base / "data.pdf"
+
+    return base
+
+
+# ---------------------------------------------------------------------------
+# Entry point
+# ---------------------------------------------------------------------------
+
+
 if __name__ == "__main__":
     setup_logging()
     logger.info("Pipeline ready.")
 
-    mode = sys.argv[1] if len(sys.argv) > 1 else "retriever"
+    mode = sys.argv[_ARG_MODE_INDEX] if len(sys.argv) > _ARG_MODE_INDEX else "retriever"
 
+    source_arg = sys.argv[_ARG_SOURCE_INDEX] if len(sys.argv) > _ARG_SOURCE_INDEX else None
+
+    source_path = _resolve_source(source_arg)
+
+    if not source_path.exists():
+        logger.error("Source not found: {}", source_path)
+        sys.exit(1)
+
+    # -----------------------------------------------------------------------
+    # CHAIN MODE
+    # -----------------------------------------------------------------------
     if mode == "chain":
         from retrieval_pipeline.llm_chain import answer as llm_answer
 
         pipeline = run_pipeline(
-            source="dataset/data.pdf",
+            source=str(source_path),
             queries=[],
         )
 
@@ -114,20 +161,26 @@ if __name__ == "__main__":
             llm_answer("What is the EBITDA margin?", docs),
         )
 
+    # -----------------------------------------------------------------------
+    # GRAPH MODE
+    # -----------------------------------------------------------------------
     elif mode == "graph":
         from retrieval_pipeline.graph import build_graph
 
         cfg = PipelineConfig()
 
         pipeline = run_pipeline(
-            source="/workspaces/new-sample/dataset/samplee.pdf",
+            source=str(source_path),
             queries=[],
             config=cfg,
         )
 
         app = build_graph(pipeline, cfg)
 
-        queries = ["Types of Machine Learning?", "Hi"]
+        queries = [
+            "Types of Machine Learning?",
+            "Hi",
+        ]
 
         for q in queries:
             result = app.invoke({"question": q})
@@ -136,8 +189,11 @@ if __name__ == "__main__":
             logger.info("Type    : {}", result["query_type"])
             logger.info("Answer  : {}", result["answer"])
 
+    # -----------------------------------------------------------------------
+    # DEFAULT MODE
+    # -----------------------------------------------------------------------
     else:
         run_pipeline(
-            source="dataset/data.pdf",
+            source=str(source_path),
             queries=["What is the invisible man name"],
         )

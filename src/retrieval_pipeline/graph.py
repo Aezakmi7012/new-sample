@@ -1,12 +1,12 @@
 """LangGraph-based query routing and conditional RAG pipeline."""
 
-from typing import Annotated
+from typing import Annotated, Protocol
 
 from langchain_core.documents import Document
 from langchain_core.output_parsers import StrOutputParser
 from langchain_core.prompts import ChatPromptTemplate
 from langchain_groq import ChatGroq
-from langgraph.graph import END, START, CompiledGraph, StateGraph
+from langgraph.graph import END, START, StateGraph
 from loguru import logger
 from pydantic import BaseModel, Field
 
@@ -35,10 +35,18 @@ class GraphState(BaseModel):
 # ---------------------------------------------------------------------------
 
 
+class GraphApp(Protocol):
+    """Protocol representing a compiled LangGraph application."""
+
+    def invoke(self, payload: dict) -> dict:
+        """Execute the graph with the given input payload."""
+        ...
+
+
 def build_graph(
     pipeline: RetrievalPipeline,
     config: PipelineConfig,
-) -> CompiledGraph:
+) -> GraphApp:
     """Construct and compile the LangGraph pipeline."""
     llm = ChatGroq(
         api_key=config.groq_api_key,
